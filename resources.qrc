@@ -4,5 +4,6 @@
         <file>resources/Select.svg</file>
         <file>resources/Flash.svg</file>
         <file>resources/etcher.zsync</file>
+        <file>resources/garuda.svg</file>
     </qresource>
 </RCC>

@@ -46,6 +46,7 @@ void GarudaDownloader::on_downloadButton_clicked()
         QString edition = this->ui->comboBox->currentText().toLower();
         zsync_client = new zsync2::ZSyncClient(url.arg(edition).toStdString(), "current.iso");
         zsync_client->setCwd(dir.absolutePath().toStdString());
+        zsync_client->setRangesOptimizationThreshold(64 * 4096);
         if (!seed_file.isEmpty() && QFile::exists(seed_file))
             zsync_client->addSeedFile(seed_file.toStdString());
 
@@ -190,6 +191,7 @@ void GarudaDownloader::on_flashButton_clicked()
 
             zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
             zsync_client->setCwd(dir.absolutePath().toStdString());
+            zsync_client->setRangesOptimizationThreshold(64 * 4096);
             zsync_downloader = new ZSyncDownloader(zsync_client);
             connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onEtcherDownloadFinished);
             connect(zsync_downloader, &ZSyncDownloader::finished, this, &GarudaDownloader::onDownlaodStop);

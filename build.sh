@@ -16,4 +16,4 @@ rm -r ./appdir/usr/translations | true
 rm -r ./appdir/usr/doc | true
 rm -r ./squashfs-root | true
 \cp --remove-destination ./appdir/usr/share/applications/Garuda-Downloader.desktop ./appdir
-../tools/linuxdeploy-plugin-appimage-x86_64.AppImage --appdir ./appdir
+UPDATE_INFORMATION="zsync|https://garuda-linux.gitlab.io/applications/garuda-downloader/Garuda_Downloader-x86_64.AppImage.zsync" ../tools/linuxdeploy-plugin-appimage-x86_64.AppImage --appdir ./appdir

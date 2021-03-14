@@ -14,7 +14,7 @@ pages:
     expire_in: 1 weeks
   script:
     - ./build.sh
-    - mkdir public && mv ./build/*.AppImage ./public/Garuda_Downloader-x86_64.AppImage
+    - mkdir public && mv ./build/Garuda_Downloader-x86_64.* ./public/
 
 testing:
   only:
@@ -25,4 +25,4 @@ testing:
     expire_in: 1 weeks
   script:
     - ./build.sh
-    - mkdir public && mv ./build/*.AppImage ./public/Garuda_Downloader-x86_64.AppImage
+    - mkdir public && mv ./build/Garuda_Downloader-x86_64.* ./public/
