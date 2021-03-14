@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/main">
+        <file>resources/Download.svg</file>
+        <file>resources/Select.svg</file>
+        <file>resources/Flash.svg</file>
+        <file>resources/etcher.zsync</file>
+    </qresource>
+</RCC>
