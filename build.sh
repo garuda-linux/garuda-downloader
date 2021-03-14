@@ -10,7 +10,7 @@ popd
 
 rm -r build | true
 mkdir -p build && cp ./resources/Garuda-Downloader.desktop ./build/ && cp ./resources/garuda.svg ./build/garuda-downloader.svg && cd build
-cmake -DCMAKE_BUILD_TYPE=Release .. && make
+cmake .. && make
 ../tools/linuxdeploy-x86_64.AppImage --plugin qt --executable=./garuda-downloader --appdir=./appdir/ --desktop-file ./Garuda-Downloader.desktop --icon-file ./garuda-downloader.svg
 rm -r ./appdir/usr/translations | true
 rm -r ./appdir/usr/doc | true

@@ -3,7 +3,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-  - apt-get update && apt-get install -y qt5-default build-essential libfuse2 file cmake wget
+  - apt-get update && apt-get install -y qt5-default build-essential libfuse2 file cmake wget libssl-dev zlib1g-dev
 
 pages:
   only:
