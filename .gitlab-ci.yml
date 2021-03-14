@@ -1,0 +1,28 @@
+image: "ubuntu:18.04"
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+before_script:
+  - apt-get update && apt-get install -y qt5-default build-essential libfuse2 file cmake wget
+
+pages:
+  only:
+    - master
+  artifacts:
+    paths:
+    - public
+    expire_in: 1 weeks
+  script:
+    - ./build.sh
+    - mkdir public && mv ./build/*.AppImage ./public/Garuda_Downloader-x86_64.AppImage
+
+testing:
+  only:
+    - testing
+  artifacts:
+    paths:
+    - public
+    expire_in: 1 weeks
+  script:
+    - ./build.sh
+    - mkdir public && mv ./build/*.AppImage ./public/Garuda_Downloader-x86_64.AppImage
