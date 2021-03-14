@@ -4,4 +4,3 @@ Type=Application
 Name=Garuda Downloader
 Exec=garuda-downloader %f
 Icon=garuda-downloader
-X-AppImage-Integrate=false

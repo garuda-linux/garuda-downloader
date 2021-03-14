@@ -11,7 +11,7 @@
 
 // TODO: Don't hardcode this
 const QString url = "https://builds.garudalinux.org/iso/garuda/%1/210313/garuda-%1-linux-zen-210313.iso.zsync";
-QDir dir("Garuda Downlaoder");
+QDir dir("Garuda Downloader");
 
 void ZSyncDownloader::run() {
 
