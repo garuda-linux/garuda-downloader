@@ -166,9 +166,87 @@
     </item>
     <item row="3" column="1">
      <widget class="QComboBox" name="comboBox">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <item>
+       <property name="text">
+        <string>Bspwn</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Cinnamon</string>
+       </property>
+      </item>
       <item>
        <property name="text">
         <string>Dr460nized</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Dr460nized-Blackarch</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Dr460nized-Gaming</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>GNOME</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>I3</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>KDE-Multimedia</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LXQt-KWin</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Mate</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>QTile</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Recbox</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Wayfire</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Xfce</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>GNOME-Barebones</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>KDE-Multimedia</string>
        </property>
       </item>
      </widget>

@@ -10,7 +10,7 @@
 #include <QDir>
 
 // TODO: Don't hardcode this
-const QString url = "https://builds.garudalinux.org/iso/garuda/%1/210313/garuda-%1-linux-zen-210313.iso.zsync";
+const QString url = "https://builds.garudalinux.org/iso/latest/garuda/%1/latest.iso.zsync";
 QDir dir("Garuda Downloader");
 
 void ZSyncDownloader::run() {
@@ -157,9 +157,10 @@ void GarudaDownloader::onUpdate()
 {
     this->ui->progressBar->setValue(zsync_client->progress() * 100);
     std::string out;
-    if (zsync_client->nextStatusMessage(out))
+    while (zsync_client->nextStatusMessage(out))
     {
-        while (zsync_client->nextStatusMessage(out));
+        if (out.rfind("optimized ranges,", 0) == 0)
+            continue;
         this->ui->statusText->setText(QString::fromStdString(out));
     }
 }
