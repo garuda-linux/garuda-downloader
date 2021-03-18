@@ -267,7 +267,7 @@
       </item>
       <item>
        <property name="text">
-        <string>KDE-Multimedia</string>
+        <string>KDE-Barebones</string>
        </property>
       </item>
      </widget>
