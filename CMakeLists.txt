@@ -32,6 +32,9 @@ set(PROJECT_SOURCES
         garudadownloader.cpp
         garudadownloader.h
         garudadownloader.ui
+        updaterwindow.cpp
+        updaterwindow.h
+        updaterwindow.ui
         resources.qrc
 )
 
