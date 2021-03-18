@@ -42,6 +42,8 @@ private:
     void onDownlaodStop();
     void setButtonStates(bool downloading);
     void onEtcherDownloadFinished(bool success);
+    void updateSelectSize();
+    void resizeEvent(QResizeEvent* event) override;
 
     Ui::GarudaDownloader *ui;
     zsync2::ZSyncClient *zsync_client = nullptr;

@@ -119,6 +119,24 @@ void GarudaDownloader::onEtcherDownloadFinished(bool success)
     QApplication::alert(this);
 }
 
+void GarudaDownloader::updateSelectSize()
+{
+    if (seed_file.isEmpty())
+        return;
+    // https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9
+    QFontMetrics metrix(ui->selectButton->font());
+    int width = ui->selectButton->width() - 2;
+    QString clippedText = metrix.elidedText("Seed file: " + QFileInfo(seed_file).fileName(), Qt::ElideMiddle, width);
+    ui->selectButton->setText(clippedText);
+}
+
+void GarudaDownloader::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    updateSelectSize();
+    this->setMaximumHeight(this->sizeHint().height());
+}
+
 void GarudaDownloader::onDownlaodStop()
 {
     this->ui->downloadButton->setText("Download");
@@ -159,6 +177,7 @@ void GarudaDownloader::onUpdate()
     std::string out;
     while (zsync_client->nextStatusMessage(out))
     {
+        qInfo() << QString::fromStdString(out);
         if (out.rfind("optimized ranges,", 0) == 0)
             continue;
         this->ui->statusText->setText(QString::fromStdString(out));
@@ -173,7 +192,8 @@ void GarudaDownloader::on_selectButton_clicked()
     if (dialog.exec())
     {
         seed_file = dialog.selectedFiles()[0];
-        this->ui->selectButton->setText("Seed file: " + QFileInfo(seed_file).fileName());
+        // Apply text
+        updateSelectSize();
     }
 }
 
