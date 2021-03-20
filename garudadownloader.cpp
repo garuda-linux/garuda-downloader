@@ -204,6 +204,14 @@ void GarudaDownloader::on_flashButton_clicked()
 {
     if (!zsync_client)
     {
+        if (QFile::exists("/usr/bin/balena-etcher-electron"))
+        {
+            this->hide();
+            QProcess::execute("/usr/bin/balena-etcher-electron", { dir.absoluteFilePath("./current.iso") });
+            this->show();
+            return;
+        }
+
         QTemporaryFile file;
         if (file.open())
         {
