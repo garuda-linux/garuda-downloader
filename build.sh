@@ -11,7 +11,7 @@ popd
 
 rm -r build | true
 mkdir -p build && cp ./resources/Garuda-Downloader.desktop ./build/ && cp ./resources/garuda.svg ./build/garuda-downloader.svg && cd build
-cmake .. && make
+cmake -DCMAKE_BUILD_TYPE='Release' .. && make
 ../tools/linuxdeploy-x86_64.AppImage --plugin qt --executable=./garuda-downloader --appdir=./appdir/ --desktop-file ./Garuda-Downloader.desktop --icon-file ./garuda-downloader.svg
 ../tools/appimageupdatetool-x86_64.AppImage --appimage-extract
 cp -r ./squashfs-root/ ./appdir/usr/bin/appimageupdatetool
