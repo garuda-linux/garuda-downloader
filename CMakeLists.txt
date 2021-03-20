@@ -57,3 +57,5 @@ endif()
 add_subdirectory(zsync2 EXCLUDE_FROM_ALL)
 
 target_link_libraries(garuda-downloader PRIVATE Qt${QT_VERSION_MAJOR}::Widgets PRIVATE libzsync2)
+install(TARGETS garuda-downloader
+    RUNTIME DESTINATION bin)
