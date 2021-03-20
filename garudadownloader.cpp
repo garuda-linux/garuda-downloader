@@ -8,10 +8,13 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QDir>
+#include <QDesktopServices>
 
 // TODO: Don't hardcode this
 const QString url = "https://builds.garudalinux.org/iso/latest/garuda/%1/latest.iso.zsync";
-QDir dir("Garuda Downloader");
+
+auto download_dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+QDir dir(download_dir.isEmpty() ? "Garuda Downloader" : QDir(download_dir).filePath("Garuda Downloader"));
 
 void ZSyncDownloader::run() {
 
@@ -77,7 +80,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
     if (success)
     {
         this->ui->progressBar->setValue(100);
-        this->ui->statusText->setText("Download finished!");
+        this->ui->statusText->setText("Download finished! Location: <a href=\"#open_folder\">" + dir.absolutePath() + "</a>");
     }
     else {
         this->ui->progressBar->setValue(100);
@@ -226,4 +229,10 @@ void GarudaDownloader::on_flashButton_clicked()
             zsync_updatetimer.start(500);
         }
     }
+}
+
+void GarudaDownloader::on_statusText_linkActivated(const QString &link)
+{
+    if (link == "#open_folder")
+        QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
 }

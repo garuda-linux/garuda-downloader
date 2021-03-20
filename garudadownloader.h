@@ -37,6 +37,8 @@ private slots:
     void on_selectButton_clicked();
     void on_flashButton_clicked();
 
+    void on_statusText_linkActivated(const QString &link);
+
 private:
     void onDownloadFinished(bool success);
     void onDownlaodStop();
