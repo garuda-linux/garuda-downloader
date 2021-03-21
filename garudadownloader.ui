@@ -192,7 +192,7 @@
       </property>
       <item>
        <property name="text">
-        <string>Bspwn</string>
+        <string>Bspwm</string>
        </property>
       </item>
       <item>
@@ -237,7 +237,7 @@
       </item>
       <item>
        <property name="text">
-        <string>Mate</string>
+        <string>MATE</string>
        </property>
       </item>
       <item>
