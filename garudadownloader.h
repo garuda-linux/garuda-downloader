@@ -14,11 +14,11 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class GarudaDownloader; }
 QT_END_NAMESPACE
 
-#if __UNIX__
+#if __unix__
 namespace zsync2 { class ZSyncClient; }
 #endif
 
-#if __UNIX__
+#if __unix__
 class ZSyncDownloader : public QThread
 {
     Q_OBJECT
@@ -57,7 +57,7 @@ private:
     void resizeEvent(QResizeEvent* event) override;
 
     Ui::GarudaDownloader *ui;
-#if __UNIX__
+#if __unix__
     zsync2::ZSyncClient *zsync_client = nullptr;
     ZSyncDownloader *zsync_downloader = nullptr;
 #else

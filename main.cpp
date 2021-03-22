@@ -1,5 +1,5 @@
 #include "garudadownloader.h"
-#if __LINUX__
+#if __linux__
 #include "updaterwindow.h"
 #endif
 
@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     GarudaDownloader w;
     w.show();
-#if __LINUX__
+#if __linux__
     UpdaterWindow updater(&w);
 #endif
     return a.exec();

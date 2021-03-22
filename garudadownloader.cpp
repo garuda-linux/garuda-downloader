@@ -2,7 +2,7 @@
 #include "./ui_garudadownloader.h"
 
 // Zsync
-#if __UNIX__
+#if __unix__
 #include <zsclient.h>
 #else
 #include <windows.h>
@@ -15,14 +15,14 @@
 #include <QDesktopServices>
 #include <functional>
 
-#if __UNIX__
+#if __unix__
 auto download_dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
 QDir dir(download_dir.isEmpty() ? "Garuda Downloader" : QDir(download_dir).filePath("Garuda Downloader"));
 #else
 QDir dir("Garuda Downloader");
 #endif
 
-#if __UNIX__
+#if __unix__
 void ZSyncDownloader::run() {
 
     emit done(client->run());
@@ -43,7 +43,7 @@ GarudaDownloader::GarudaDownloader(QWidget *parent)
 
 GarudaDownloader::~GarudaDownloader()
 {
-#if __UNIX__
+#if __unix__
     if (zsync_client)
         zsync_downloader->terminate();
 #else
@@ -55,7 +55,7 @@ GarudaDownloader::~GarudaDownloader()
 
 void GarudaDownloader::on_downloadButton_clicked()
 {
-#if __UNIX__
+#if __unix__
     if (!zsync_client)
 #else
     if (!zsync_windows_downloader)
@@ -67,7 +67,7 @@ void GarudaDownloader::on_downloadButton_clicked()
 
 
         QString edition = this->ui->comboBox->currentText().toLower();
-#if __UNIX__
+#if __unix__
         zsync_client = new zsync2::ZSyncClient(QString("https://mirrors.fossho.st/garuda/iso/latest/garuda/%1/latest.iso.zsync").arg(edition).toStdString(), "current.iso");
         zsync_client->setCwd(dir.absolutePath().toStdString());
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
@@ -97,7 +97,7 @@ void GarudaDownloader::on_downloadButton_clicked()
     }
     else
     {
-#if __UNIX__
+#if __unix__
         zsync_downloader->terminate();
 #else
         zsync_windows_downloader->kill();
@@ -119,7 +119,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
     else {
         this->ui->progressBar->setValue(100);
         std::string out;
-#if __UNIX__
+#if __unix__
         if (zsync_client->nextStatusMessage(out))
         {
             while (zsync_client->nextStatusMessage(out));
@@ -133,7 +133,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
 
 void GarudaDownloader::onEtcherDownloadFinished(bool success)
 {
-#if __LINUX__
+#if __linux__
     zsync_updatetimer.stop();
     finished = true;
 
@@ -190,7 +190,7 @@ void GarudaDownloader::onDownloadStop()
 
     setButtonStates(false);
 
-#if __UNIX__
+#if __unix__
     delete zsync_client;
     zsync_client = nullptr;
     zsync_downloader->deleteLater();
@@ -206,7 +206,7 @@ void GarudaDownloader::onDownloadStop()
 
     // Clean up some files...
     QDir wildcards(dir.absolutePath());
-    wildcards.setNameFilters({"*.zs-old", "rcksum-*", "rufus.exe"});
+    wildcards.setNameFilters({"*.zs-old", "rcksum-*", "rufus.exe", "*.zsync"});
     for(const QString & filename: wildcards.entryList()) {
         QFile file(dir.absoluteFilePath(filename));
         file.setPermissions(file.permissions() |
@@ -222,14 +222,14 @@ void GarudaDownloader::setButtonStates(bool downloading)
 {
     this->ui->selectButton->setDisabled(downloading);
     this->ui->flashButton->setDisabled(downloading ? true : (!QFile::exists(dir.absoluteFilePath("current.iso"))));
-#if !__UNIX__
+#if !__unix__
     ui->selectButton->hide();
 #endif
 }
 
 void GarudaDownloader::onUpdate()
 {
-#if __UNIX__
+#if __unix__
     this->ui->progressBar->setValue(zsync_client->progress() * 100);
     std::string out;
     while (zsync_client->nextStatusMessage(out))
@@ -295,7 +295,7 @@ void GarudaDownloader::on_selectButton_clicked()
 
 /*void GarudaDownloader::on_flashButton_clicked()
 {
-#if __UNIX__
+#if __unix__
     if (!zsync_client)
 #else
     if (true)
@@ -317,7 +317,7 @@ void GarudaDownloader::on_selectButton_clicked()
             auto path = file.fileName();
             file.remove();
             QFile::copy(":/main/resources/etcher.zsync", path);
-#if __UNIX__
+#if __unix__
             zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
             zsync_client->setCwd(dir.absolutePath().toStdString());
             zsync_client->setRangesOptimizationThreshold(64 * 4096);
@@ -339,7 +339,7 @@ void GarudaDownloader::on_selectButton_clicked()
 
 void GarudaDownloader::on_flashButton_clicked()
 {
-#if __UNIX__
+#if __unix__
     if (!zsync_client)
 #else
     if (!zsync_windows_downloader)
@@ -349,7 +349,7 @@ void GarudaDownloader::on_flashButton_clicked()
             if (!QDir().mkdir(dir.absolutePath()))
                 return;
 
-#if __LINUX__
+#if __linux__
         if (QFile::exists("/usr/bin/balena-etcher-electron"))
         {
             this->hide();
@@ -359,7 +359,7 @@ void GarudaDownloader::on_flashButton_clicked()
         }
 
         auto path = dir.absoluteFilePath("etcher.zsync");
-        bool out = QFile::copy(":/main/resources/etcher.zsync", path);
+        QFile::copy(":/main/resources/etcher.zsync", path);
         zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
         zsync_client->setCwd(dir.absolutePath().toStdString());
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
