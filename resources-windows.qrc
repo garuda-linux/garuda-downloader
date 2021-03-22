@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/windows">
+        <file>resources/rufus.exe</file>
+    </qresource>
+</RCC>

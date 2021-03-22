@@ -38,6 +38,8 @@ set(PROJECT_SOURCES
         resources.qrc
 )
 
+list(APPEND PROJECT_SOURCES resources-windows.qrc)
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(garuda-downloader
         ${PROJECT_SOURCES}
@@ -47,6 +49,10 @@ else()
         add_library(garuda-downloader SHARED
             ${PROJECT_SOURCES}
         )
+    elseif(WIN32)
+        add_executable(garuda-downloader WIN32
+            ${PROJECT_SOURCES}
+        )
     else()
         add_executable(garuda-downloader
             ${PROJECT_SOURCES}
@@ -54,8 +60,12 @@ else()
     endif()
 endif()
 
-add_subdirectory(zsync2 EXCLUDE_FROM_ALL)
+if (!WIN32)
+    add_subdirectory(zsync2 EXCLUDE_FROM_ALL)
+    target_link_libraries(garuda-downloader PRIVATE Qt${QT_VERSION_MAJOR}::Widgets PRIVATE libzsync2)
+else()
+    target_link_libraries(garuda-downloader PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::QSvgPlugin PRIVATE -static)
+endif()
 
-target_link_libraries(garuda-downloader PRIVATE Qt${QT_VERSION_MAJOR}::Widgets PRIVATE libzsync2)
 install(TARGETS garuda-downloader
     RUNTIME DESTINATION bin)

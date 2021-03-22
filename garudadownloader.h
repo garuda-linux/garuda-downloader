@@ -5,12 +5,20 @@
 #include <QThread>
 #include <QTimer>
 
+// Zsync
+#if __WIN32__
+#include <QProcess>
+#endif
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class GarudaDownloader; }
 QT_END_NAMESPACE
 
+#if __UNIX__
 namespace zsync2 { class ZSyncClient; }
+#endif
 
+#if __UNIX__
 class ZSyncDownloader : public QThread
 {
     Q_OBJECT
@@ -22,6 +30,7 @@ private:
 signals:
     void done(bool success);
 };
+#endif
 
 class GarudaDownloader : public QMainWindow
 {
@@ -41,17 +50,21 @@ private slots:
 
 private:
     void onDownloadFinished(bool success);
-    void onDownlaodStop();
+    void onDownloadStop();
     void setButtonStates(bool downloading);
     void onEtcherDownloadFinished(bool success);
     void updateSelectSize();
     void resizeEvent(QResizeEvent* event) override;
 
     Ui::GarudaDownloader *ui;
+#if __UNIX__
     zsync2::ZSyncClient *zsync_client = nullptr;
-    ZSyncDownloader *zsync_downloader = nullptr;;
+    ZSyncDownloader *zsync_downloader = nullptr;
+#else
+    QProcess *zsync_windows_downloader = nullptr;
+#endif
     QTimer zsync_updatetimer;
     QString seed_file;
-    bool finished;
+    bool finished = false;
 };
 #endif // GARUDADOWNLOADER_H
