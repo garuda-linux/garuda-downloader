@@ -60,7 +60,7 @@ else()
     endif()
 endif()
 
-if (!WIN32)
+if (NOT WIN32)
     add_subdirectory(zsync2 EXCLUDE_FROM_ALL)
     target_link_libraries(garuda-downloader PRIVATE Qt${QT_VERSION_MAJOR}::Widgets PRIVATE libzsync2)
 else()
