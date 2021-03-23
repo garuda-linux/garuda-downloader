@@ -7,7 +7,6 @@
 #include <QFileDialog>
 #else
 #include <windows.h>
-#include <QProcess>
 #endif
 
 #include <QFile>
@@ -15,6 +14,7 @@
 #include <QDesktopServices>
 #include <QDebug>
 #include <QUrl>
+#include <QProcess>
 
 #if __unix__
 auto download_dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
