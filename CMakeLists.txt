@@ -36,6 +36,7 @@ set(PROJECT_SOURCES
         updaterwindow.h
         updaterwindow.ui
         resources.qrc
+        QDarkStyleSheet/qdarkstyle/style.qrc
 )
 
 if (WIN32)
