@@ -1,24 +1,26 @@
 #include "garudadownloader.h"
 #include "./ui_garudadownloader.h"
 
-// Zsync
 #if __unix__
+// Zsync
 #include <zsclient.h>
+#include <QFileDialog>
 #else
 #include <windows.h>
+#include <QProcess>
 #endif
 
-#include <QtConcurrent/QtConcurrent>
 #include <QFile>
-#include <QFileDialog>
 #include <QDir>
 #include <QDesktopServices>
-#include <functional>
+#include <QDebug>
+#include <QUrl>
 
 #if __unix__
 auto download_dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
 QDir dir(download_dir.isEmpty() ? "Garuda Downloader" : QDir(download_dir).filePath("Garuda Downloader"));
 #else
+// Windows can't use the same directory as unix, since cygwin compiled zsync2 doesn't have access to arbitrary directories
 QDir dir("Garuda Downloader");
 #endif
 
@@ -37,6 +39,7 @@ GarudaDownloader::GarudaDownloader(QWidget *parent)
     setButtonStates(false);
     connect(&zsync_updatetimer, SIGNAL(timeout()), this, SLOT(onUpdate()));
 #if __WIN32
+    // On windows, we use the embedded rufus executable instead
     ui->flashButton->setText("Launch Rufus");
 #endif
 }
@@ -65,7 +68,7 @@ void GarudaDownloader::on_downloadButton_clicked()
             if (!QDir().mkdir(dir.absolutePath()))
                 return;
 
-
+        // This is really just a terrible hack, TODO FIXME
         QString edition = this->ui->comboBox->currentText().toLower();
 #if __unix__
         zsync_client = new zsync2::ZSyncClient(QString("https://mirrors.fossho.st/garuda/iso/latest/garuda/%1/latest.iso.zsync").arg(edition).toStdString(), "current.iso");
@@ -131,9 +134,9 @@ void GarudaDownloader::onDownloadFinished(bool success)
     QApplication::alert(this);
 }
 
+#if __linux__
 void GarudaDownloader::onEtcherDownloadFinished(bool success)
 {
-#if __linux__
     zsync_updatetimer.stop();
     finished = true;
 
@@ -158,7 +161,6 @@ void GarudaDownloader::onEtcherDownloadFinished(bool success)
     }
 
     QApplication::alert(this);
-#endif
 }
 
 void GarudaDownloader::updateSelectSize()
@@ -171,25 +173,19 @@ void GarudaDownloader::updateSelectSize()
     QString clippedText = metrix.elidedText("Seed file: " + QFileInfo(seed_file).fileName(), Qt::ElideMiddle, width);
     ui->selectButton->setText(clippedText);
 }
+#endif
 
 void GarudaDownloader::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
+#if __unix__
     updateSelectSize();
+#endif
     this->setMaximumHeight(this->sizeHint().height());
 }
 
 void GarudaDownloader::onDownloadStop()
 {
-    this->ui->downloadButton->setText("Download");
-    if (!finished)
-    {
-        this->ui->progressBar->setValue(0);
-        this->ui->statusText->setText("Idle");
-    }
-
-    setButtonStates(false);
-
 #if __unix__
     delete zsync_client;
     zsync_client = nullptr;
@@ -203,6 +199,15 @@ void GarudaDownloader::onDownloadStop()
     delete zsync_windows_downloader;
     zsync_windows_downloader = nullptr;
 #endif
+
+    this->ui->downloadButton->setText("Download");
+    if (!finished)
+    {
+        this->ui->progressBar->setValue(0);
+        this->ui->statusText->setText("Idle");
+    }
+
+    setButtonStates(false);
 
     // Clean up some files...
     QDir wildcards(dir.absolutePath());
@@ -222,7 +227,7 @@ void GarudaDownloader::setButtonStates(bool downloading)
 {
     this->ui->selectButton->setDisabled(downloading);
     this->ui->flashButton->setDisabled(downloading ? true : (!QFile::exists(dir.absoluteFilePath("current.iso"))));
-#if !__unix__
+#ifndef __unix__
     ui->selectButton->hide();
 #endif
 }
@@ -246,7 +251,7 @@ void GarudaDownloader::onUpdate()
         if (entry.isEmpty())
             continue;
         qInfo() << entry;
-        if (entry.toStdString().rfind("optimized ranges,", 0) == 0)
+        if (entry.startsWith("optimized ranges,") || entry.startsWith("zsync2 version"))
             continue;
         if (entry == "checksum matches OK")
         {
@@ -273,13 +278,12 @@ void GarudaDownloader::onUpdate()
         if (entry.isEmpty())
             continue;
         qInfo() << entry;
-        if (entry.toStdString().rfind("optimized ranges,", 0) == 0)
-            continue;
         this->ui->statusText->setText(entry);
     }
 #endif
 }
 
+#if __unix__
 void GarudaDownloader::on_selectButton_clicked()
 {
     QFileDialog dialog(this);
@@ -292,50 +296,7 @@ void GarudaDownloader::on_selectButton_clicked()
         updateSelectSize();
     }
 }
-
-/*void GarudaDownloader::on_flashButton_clicked()
-{
-#if __unix__
-    if (!zsync_client)
-#else
-    if (true)
 #endif
-    {
-        if (QFile::exists("/usr/bin/balena-etcher-electron"))
-        {
-            this->hide();
-            QProcess::execute("/usr/bin/balena-etcher-electron", { dir.absoluteFilePath("./current.iso") });
-            this->show();
-            return;
-        }
-
-        QTemporaryFile file;
-        if (file.open())
-        {
-            // This is absolutely terrible don't ever do this
-            file.close();
-            auto path = file.fileName();
-            file.remove();
-            QFile::copy(":/main/resources/etcher.zsync", path);
-#if __unix__
-            zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
-            zsync_client->setCwd(dir.absolutePath().toStdString());
-            zsync_client->setRangesOptimizationThreshold(64 * 4096);
-            zsync_downloader = new ZSyncDownloader(zsync_client);
-            connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onEtcherDownloadFinished);
-            connect(zsync_downloader, &ZSyncDownloader::finished, this, &GarudaDownloader::onDownloadStop);
-            zsync_downloader->start();
-#endif
-
-            this->ui->downloadButton->setText("Cancel");
-            this->ui->statusText->setText("Initializing");
-            setButtonStates(true);
-
-            finished = false;
-            zsync_updatetimer.start(500);
-        }
-    }
-}*/
 
 void GarudaDownloader::on_flashButton_clicked()
 {
@@ -359,7 +320,7 @@ void GarudaDownloader::on_flashButton_clicked()
         }
 
         auto path = dir.absoluteFilePath("etcher.zsync");
-        QFile::copy(":/main/resources/etcher.zsync", path);
+        QFile::copy(":/linux/resources/etcher.zsync", path);
         zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
         zsync_client->setCwd(dir.absolutePath().toStdString());
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
@@ -378,6 +339,8 @@ void GarudaDownloader::on_flashButton_clicked()
     QFile::copy(":/windows/resources/rufus.exe", path);
     this->hide();
 
+    // Hacky hack for allowing rufus to be started.
+    // No idea why it doesn't start via qprocess
     SHELLEXECUTEINFO ShExecInfo = {0};
     ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
     ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;

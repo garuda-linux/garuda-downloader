@@ -2,17 +2,17 @@
 #define GARUDADOWNLOADER_H
 
 #include <QMainWindow>
-#include <QThread>
 #include <QTimer>
 
-// Zsync
-#if __WIN32__
-#include <QProcess>
+#if __unix__
+#include <QThread>
 #endif
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class GarudaDownloader; }
 QT_END_NAMESPACE
+
+class QProcess;
 
 #if __unix__
 namespace zsync2 { class ZSyncClient; }
@@ -43,18 +43,22 @@ public:
 private slots:
     void on_downloadButton_clicked();
     void onUpdate();
+#if __unix__
     void on_selectButton_clicked();
+#endif
     void on_flashButton_clicked();
-
     void on_statusText_linkActivated(const QString &link);
 
 private:
     void onDownloadFinished(bool success);
     void onDownloadStop();
     void setButtonStates(bool downloading);
+    void resizeEvent(QResizeEvent* event) override;
+
+#if __unix__
     void onEtcherDownloadFinished(bool success);
     void updateSelectSize();
-    void resizeEvent(QResizeEvent* event) override;
+#endif
 
     Ui::GarudaDownloader *ui;
 #if __unix__

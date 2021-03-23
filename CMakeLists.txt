@@ -32,15 +32,19 @@ set(PROJECT_SOURCES
         garudadownloader.cpp
         garudadownloader.h
         garudadownloader.ui
-        updaterwindow.cpp
-        updaterwindow.h
-        updaterwindow.ui
         resources.qrc
         QDarkStyleSheet/qdarkstyle/style.qrc
 )
 
 if (WIN32)
     list(APPEND PROJECT_SOURCES resources-windows.qrc)
+elseif(UNIX AND NOT APPLE)
+    list(APPEND PROJECT_SOURCES updaterwindow.cpp
+        updaterwindow.h
+        updaterwindow.ui
+        resources-linux.qrc
+    )
+
 endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
