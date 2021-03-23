@@ -97,6 +97,7 @@ void GarudaDownloader::on_downloadButton_clicked()
 
         finished = false;
         zsync_updatetimer.start(500);
+        this->ui->progressBar->setValue(0);
     }
     else
     {
@@ -113,14 +114,13 @@ void GarudaDownloader::onDownloadFinished(bool success)
 {
     zsync_updatetimer.stop();
     finished = true;
+    this->ui->progressBar->setValue(100);
 
     if (success)
     {
-        this->ui->progressBar->setValue(100);
         this->ui->statusText->setText("Download finished! Location: <a href=\"#open_folder\">" + dir.absolutePath() + "</a>");
     }
     else {
-        this->ui->progressBar->setValue(100);
         std::string out;
 #if __unix__
         if (zsync_client->nextStatusMessage(out))
