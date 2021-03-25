@@ -1,6 +1,6 @@
 [submodule "zsync2"]
 	path = zsync2
-	url = https://github.com/AppImage/zsync2
+	url = https://gitlab.com/garuda-linux/applications/zsync2
 [submodule "QDarkStyleSheet"]
 	path = QDarkStyleSheet
 	url = https://github.com/ColinDuquesnoy/QDarkStyleSheet
