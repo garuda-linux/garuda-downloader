@@ -188,16 +188,11 @@
     <item row="3" column="1">
      <widget class="QComboBox" name="comboBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <item>
        <property name="text">
         <string>Bspwm</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Cinnamon</string>
        </property>
       </item>
       <item>
@@ -227,17 +222,7 @@
       </item>
       <item>
        <property name="text">
-        <string>KDE-Multimedia</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
         <string>LXQt-KWin</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>MATE</string>
        </property>
       </item>
       <item>
@@ -247,7 +232,7 @@
       </item>
       <item>
        <property name="text">
-        <string>Recbox</string>
+        <string>Sway</string>
        </property>
       </item>
       <item>
