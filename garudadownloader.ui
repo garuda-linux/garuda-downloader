@@ -212,6 +212,11 @@
       </item>
       <item>
        <property name="text">
+        <string>Dr460nized-Dev</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
         <string>GNOME</string>
        </property>
       </item>
@@ -261,6 +266,7 @@
   </widget>
  </widget>
  <resources>
+  <include location="resources.qrc"/>
   <include location="resources.qrc"/>
  </resources>
  <connections/>

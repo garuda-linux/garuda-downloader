@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QtNetwork/QNetworkAccessManager>
 
 #if __unix__
 #include <QThread>
@@ -48,6 +49,7 @@ private slots:
 #endif
     void on_flashButton_clicked();
     void on_statusText_linkActivated(const QString &link);
+    void onEditionlistDownloaded();
 
 private:
     void onDownloadFinished(bool success);
@@ -69,6 +71,10 @@ private:
 #endif
     QTimer zsync_updatetimer;
     QString seed_file;
+
+    QNetworkAccessManager network_manager;
+    QNetworkReply *network_reply;
+
     bool finished = false;
 };
 #endif // GARUDADOWNLOADER_H

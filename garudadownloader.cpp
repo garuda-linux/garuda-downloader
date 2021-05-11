@@ -3,35 +3,41 @@
 
 #if __unix__
 // Zsync
-#include <zsclient.h>
 #include <QFileDialog>
+#include <zsclient.h>
 #else
 #include <windows.h>
 #endif
 
-#include <QFile>
-#include <QDir>
-#include <QDesktopServices>
 #include <QDebug>
-#include <QUrl>
+#include <QDesktopServices>
+#include <QDir>
+#include <QFile>
 #include <QProcess>
+#include <QUrl>
+#include <QXmlStreamReader>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
 
 #if __unix__
-auto download_dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-QDir dir(download_dir.isEmpty() ? "Garuda Downloader" : QDir(download_dir).filePath("Garuda Downloader"));
+const QString DOWNLOAD_URL = "https://mirrors.fossho.st/garuda/iso/latest/garuda/";
+auto DOWNLOAD_DIR = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+QDir dir(DOWNLOAD_DIR.isEmpty() ? "Garuda Downloader" : QDir(DOWNLOAD_DIR).filePath("Garuda Downloader"));
 #else
+// Zsync compiled for Windows does not support https
+const QString DOWNLOAD_URL = "http://mirrors.fossho.st/garuda/iso/latest/garuda/";
 // Windows can't use the same directory as unix, since cygwin compiled zsync2 doesn't have access to arbitrary directories
-QDir dir("Garuda Downloader");
+QDir DOWNLOAD_DIR("Garuda Downloader");
 #endif
 
 #if __unix__
-void ZSyncDownloader::run() {
-
+void ZSyncDownloader::run()
+{
     emit done(client->run());
 }
 #endif
 
-GarudaDownloader::GarudaDownloader(QWidget *parent)
+GarudaDownloader::GarudaDownloader(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::GarudaDownloader)
 {
@@ -42,6 +48,11 @@ GarudaDownloader::GarudaDownloader(QWidget *parent)
     // On windows, we use the embedded rufus executable instead
     ui->flashButton->setText("Launch Rufus");
 #endif
+
+    // Download up to date edition list
+    network_reply = network_manager.get(QNetworkRequest(DOWNLOAD_URL));
+    connect(network_reply, SIGNAL(finished()), this,
+        SLOT(onEditionlistDownloaded()));
 }
 
 GarudaDownloader::~GarudaDownloader()
@@ -70,8 +81,9 @@ void GarudaDownloader::on_downloadButton_clicked()
 
         // This is really just a terrible hack, TODO FIXME
         QString edition = this->ui->comboBox->currentText().toLower();
+        auto url = QString(DOWNLOAD_URL + "%1/latest.iso.zsync").arg(edition);
 #if __unix__
-        zsync_client = new zsync2::ZSyncClient(QString("https://mirrors.fossho.st/garuda/iso/latest/garuda/%1/latest.iso.zsync").arg(edition).toStdString(), "current.iso");
+        zsync_client = new zsync2::ZSyncClient(url.toStdString(), "current.iso");
         zsync_client->setCwd(dir.absolutePath().toStdString());
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
         if (!seed_file.isEmpty() && QFile::exists(seed_file))
@@ -84,7 +96,7 @@ void GarudaDownloader::on_downloadButton_clicked()
 #else
         zsync_windows_downloader = new QProcess();
         // Has to be http, zsync here has no access to libcurl certs
-        QStringList arguments = {QString("http://mirrors.fossho.st/garuda/iso/latest/garuda/%1/latest.iso.zsync").arg(edition), "-o", "current.iso", "--force-update"};
+        QStringList arguments = { url, "-o", "current.iso", "--force-update" };
         zsync_windows_downloader->setProcessChannelMode(QProcess::MergedChannels);
         zsync_windows_downloader->setWorkingDirectory(dir.absolutePath());
         zsync_windows_downloader->start("zsync2.exe", arguments);
@@ -98,9 +110,7 @@ void GarudaDownloader::on_downloadButton_clicked()
         finished = false;
         zsync_updatetimer.start(500);
         this->ui->progressBar->setValue(0);
-    }
-    else
-    {
+    } else {
 #if __unix__
         zsync_downloader->terminate();
 #else
@@ -116,16 +126,14 @@ void GarudaDownloader::onDownloadFinished(bool success)
     finished = true;
     this->ui->progressBar->setValue(100);
 
-    if (success)
-    {
+    if (success) {
         this->ui->statusText->setText("Download finished! Location: <a href=\"#open_folder\">" + dir.absolutePath() + "</a>");
-    }
-    else {
+    } else {
         std::string out;
 #if __unix__
-        if (zsync_client->nextStatusMessage(out))
-        {
-            while (zsync_client->nextStatusMessage(out));
+        if (zsync_client->nextStatusMessage(out)) {
+            while (zsync_client->nextStatusMessage(out))
+                ;
             this->ui->statusText->setText(QString::fromStdString(out));
         }
 #endif
@@ -140,22 +148,20 @@ void GarudaDownloader::onEtcherDownloadFinished(bool success)
     zsync_updatetimer.stop();
     finished = true;
 
-    if (success)
-    {
+    if (success) {
         this->ui->progressBar->setValue(0);
         this->ui->statusText->setText("Idle");
         this->hide();
 
-        QFile::setPermissions(dir.absoluteFilePath("./etcher.AppImage"), QFile::ReadOwner|QFile::WriteOwner|QFile::ExeOwner);
+        QFile::setPermissions(dir.absoluteFilePath("./etcher.AppImage"), QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
         QProcess::execute(dir.absoluteFilePath("etcher.AppImage"), { dir.absoluteFilePath("./current.iso") });
         this->show();
-    }
-    else {
+    } else {
         this->ui->progressBar->setValue(100);
         std::string out;
-        if (zsync_client->nextStatusMessage(out))
-        {
-            while (zsync_client->nextStatusMessage(out));
+        if (zsync_client->nextStatusMessage(out)) {
+            while (zsync_client->nextStatusMessage(out))
+                ;
             this->ui->statusText->setText(QString::fromStdString(out));
         }
     }
@@ -175,7 +181,7 @@ void GarudaDownloader::updateSelectSize()
 }
 #endif
 
-void GarudaDownloader::resizeEvent(QResizeEvent *event)
+void GarudaDownloader::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
 #if __unix__
@@ -201,8 +207,7 @@ void GarudaDownloader::onDownloadStop()
 #endif
 
     this->ui->downloadButton->setText("Download");
-    if (!finished)
-    {
+    if (!finished) {
         this->ui->progressBar->setValue(0);
         this->ui->statusText->setText("Idle");
     }
@@ -211,14 +216,10 @@ void GarudaDownloader::onDownloadStop()
 
     // Clean up some files...
     QDir wildcards(dir.absolutePath());
-    wildcards.setNameFilters({"*.zs-old", "rcksum-*", "rufus.exe", "*.zsync"});
-    for(const QString & filename: wildcards.entryList()) {
+    wildcards.setNameFilters({ "*.zs-old", "rcksum-*", "rufus.exe", "*.zsync" });
+    for (const QString& filename : wildcards.entryList()) {
         QFile file(dir.absoluteFilePath(filename));
-        file.setPermissions(file.permissions() |
-                                QFileDevice::WriteOwner |
-                                QFileDevice::WriteUser |
-                                QFileDevice::WriteGroup |
-                                QFileDevice::WriteOther);
+        file.setPermissions(file.permissions() | QFileDevice::WriteOwner | QFileDevice::WriteUser | QFileDevice::WriteGroup | QFileDevice::WriteOther);
         file.remove();
     }
 }
@@ -237,8 +238,7 @@ void GarudaDownloader::onUpdate()
 #if __unix__
     this->ui->progressBar->setValue(zsync_client->progress() * 100);
     std::string out;
-    while (zsync_client->nextStatusMessage(out))
-    {
+    while (zsync_client->nextStatusMessage(out)) {
         qInfo() << QString::fromStdString(out);
         if (out.rfind("optimized ranges,", 0) == 0)
             continue;
@@ -246,20 +246,17 @@ void GarudaDownloader::onUpdate()
     }
 #else
     auto output = QString(zsync_windows_downloader->readAllStandardOutput()).split("\n");
-    for (auto &entry : output)
-    {
+    for (auto& entry : output) {
         if (entry.isEmpty())
             continue;
         qInfo() << entry;
         if (entry.startsWith("optimized ranges,") || entry.startsWith("zsync2 version"))
             continue;
-        if (entry == "checksum matches OK")
-        {
+        if (entry == "checksum matches OK") {
             onDownloadFinished(true);
             return;
         }
-        if (entry.startsWith("\r"))
-        {
+        if (entry.startsWith("\r")) {
             QRegExp expression("\\d+(?:\\.\\d+)?%");
             expression.indexIn(entry);
             auto captured = expression.capturedTexts();
@@ -268,13 +265,11 @@ void GarudaDownloader::onUpdate()
             int number = captured.first().split(".").first().toInt(&ok);
             if (ok)
                 this->ui->progressBar->setValue(number);
-        }
-        else
-                this->ui->statusText->setText(entry);
+        } else
+            this->ui->statusText->setText(entry);
     }
     auto error = QString(zsync_windows_downloader->readAllStandardError()).split("\n");
-    for (auto &entry : error)
-    {
+    for (auto& entry : error) {
         if (entry.isEmpty())
             continue;
         qInfo() << entry;
@@ -289,8 +284,7 @@ void GarudaDownloader::on_selectButton_clicked()
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::ExistingFile);
     dialog.setNameFilter(tr("ISO Files(*.iso)"));
-    if (dialog.exec())
-    {
+    if (dialog.exec()) {
         seed_file = dialog.selectedFiles()[0];
         // Apply text
         updateSelectSize();
@@ -311,8 +305,7 @@ void GarudaDownloader::on_flashButton_clicked()
                 return;
 
 #if __linux__
-        if (QFile::exists("/usr/bin/balena-etcher-electron"))
-        {
+        if (QFile::exists("/usr/bin/balena-etcher-electron")) {
             this->hide();
             QProcess::execute("/usr/bin/balena-etcher-electron", { dir.absoluteFilePath("./current.iso") });
             this->show();
@@ -335,32 +328,97 @@ void GarudaDownloader::on_flashButton_clicked()
         finished = false;
         zsync_updatetimer.start(500);
 #else
-    auto path = dir.absoluteFilePath("rufus.exe");
-    QFile::copy(":/windows/resources/rufus.exe", path);
-    this->hide();
+        auto path = dir.absoluteFilePath("rufus.exe");
+        QFile::copy(":/windows/resources/rufus.exe", path);
+        this->hide();
 
-    // Hacky hack for allowing rufus to be started.
-    // No idea why it doesn't start via qprocess
-    SHELLEXECUTEINFO ShExecInfo = {0};
-    ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-    ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-    ShExecInfo.hwnd = NULL;
-    ShExecInfo.lpVerb = "runas";
-    ShExecInfo.lpFile = path.toUtf8().constData();
-    ShExecInfo.lpParameters = "-g -i current.iso";
-    ShExecInfo.lpDirectory = dir.absolutePath().toUtf8().constData();
-    ShExecInfo.nShow = SW_SHOW;
-    ShExecInfo.hInstApp = NULL;
-    ShellExecuteEx(&ShExecInfo);
-    WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-    CloseHandle(ShExecInfo.hProcess);
-    this->show();
+        // Hacky hack for allowing rufus to be started.
+        // No idea why it doesn't start via qprocess
+        SHELLEXECUTEINFO ShExecInfo = { 0 };
+        ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+        ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+        ShExecInfo.hwnd = NULL;
+        ShExecInfo.lpVerb = "runas";
+        ShExecInfo.lpFile = path.toUtf8().constData();
+        ShExecInfo.lpParameters = "-g -i current.iso";
+        ShExecInfo.lpDirectory = dir.absolutePath().toUtf8().constData();
+        ShExecInfo.nShow = SW_SHOW;
+        ShExecInfo.hInstApp = NULL;
+        ShellExecuteEx(&ShExecInfo);
+        WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+        CloseHandle(ShExecInfo.hProcess);
+        this->show();
 #endif
     }
 }
 
-void GarudaDownloader::on_statusText_linkActivated(const QString &link)
+void GarudaDownloader::on_statusText_linkActivated(const QString& link)
 {
     if (link == "#open_folder")
         QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
+}
+
+void GarudaDownloader::onEditionlistDownloaded()
+{
+    int step = 0;
+    if (network_reply->error() == network_reply->NoError) {
+        QStringList editions;
+        QXmlStreamReader xml(network_reply->readAll());
+        while (!xml.atEnd()) {
+            xml.readNextStartElement();
+            switch (step)
+            {
+            case 0:
+                if (xml.name() == "html")
+                {
+                    step++;
+                    continue;
+                }
+            case 1:
+                if (xml.name() == "body")
+                {
+                    step++;
+                    continue;
+                }
+            case 2:
+                if (xml.name() == "hr")
+                {
+                    step++;
+                    continue;
+                }
+            case 3:
+                if (xml.name() == "pre")
+                {
+                    step++;
+                    continue;
+                }
+            case 4:
+                if (xml.name() == "a")
+                {
+                    auto text = xml.readElementText();
+                    if (text != "../")
+                        editions.append(text.at(0).toUpper() + text.mid(1, text.length()-2));
+                    continue;
+                }
+                break;
+
+            }
+            xml.skipCurrentElement();
+        }
+        if (!editions.empty())
+        {
+            for (int i = 0; i < this->ui->comboBox->count(); i++)
+            {
+                auto text = this->ui->comboBox->itemText(i);
+                for (auto &edition : editions)
+                {
+                    if (edition.toLower() == text.toLower())
+                        edition = text;
+                }
+            }
+            this->ui->comboBox->clear();
+            this->ui->comboBox->addItems(editions);
+        }
+        this->ui->comboBox->setCurrentIndex(editions.indexOf("Dr460nized"));
+    }
 }
