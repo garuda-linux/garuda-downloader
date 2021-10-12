@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
+#include <QStandardPaths>
 #include <QFile>
 #include <QProcess>
 #include <QUrl>
@@ -369,31 +370,31 @@ void GarudaDownloader::onEditionlistDownloaded()
             switch (step)
             {
             case 0:
-                if (xml.name() == "html")
+                if (xml.name() == QString("html"))
                 {
                     step++;
                     continue;
                 }
             case 1:
-                if (xml.name() == "body")
+                if (xml.name() == QString("body"))
                 {
                     step++;
                     continue;
                 }
             case 2:
-                if (xml.name() == "hr")
+                if (xml.name() == QString("hr"))
                 {
                     step++;
                     continue;
                 }
             case 3:
-                if (xml.name() == "pre")
+                if (xml.name() == QString("pre"))
                 {
                     step++;
                     continue;
                 }
             case 4:
-                if (xml.name() == "a")
+                if (xml.name() == QString("a"))
                 {
                     auto text = xml.readElementText();
                     if (text != "../")
