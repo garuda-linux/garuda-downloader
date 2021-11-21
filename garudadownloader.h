@@ -53,9 +53,10 @@ private slots:
 
 private:
     void onDownloadFinished(bool success);
-    void onDownloadStop();
+    void onDownloadStop(int code);
     void setButtonStates(bool downloading);
     void resizeEvent(QResizeEvent* event) override;
+    void cleanUp();
 
 #if __unix__
     void onEtcherDownloadFinished(bool success);

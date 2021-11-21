@@ -28,7 +28,7 @@ QDir dir(DOWNLOAD_DIR.isEmpty() ? "Garuda Downloader" : QDir(DOWNLOAD_DIR).fileP
 // Zsync compiled for Windows does not support https
 const QString DOWNLOAD_URL = "http://mirrors.fossho.st/garuda/iso/latest/garuda/";
 // Windows can't use the same directory as unix, since cygwin compiled zsync2 doesn't have access to arbitrary directories
-QDir DOWNLOAD_DIR("Garuda Downloader");
+QDir dir("Garuda Downloader");
 #endif
 
 #if __unix__
@@ -38,10 +38,42 @@ void ZSyncDownloader::run()
 }
 #endif
 
+void logHandler(QtMsgType type, const QMessageLogContext &, const QString & msg)
+{
+    QString txt;
+    switch (type) {
+    case QtInfoMsg:
+        txt = QString("Info: %1").arg(msg);
+        break;
+    case QtDebugMsg:
+        txt = QString("Debug: %1").arg(msg);
+        break;
+    case QtWarningMsg:
+        txt = QString("Warning: %1").arg(msg);
+    break;
+    case QtCriticalMsg:
+        txt = QString("Critical: %1").arg(msg);
+    break;
+    case QtFatalMsg:
+        txt = QString("Fatal: %1").arg(msg);
+    break;
+    }
+    QFile outFile(dir.filePath("log.txt"));
+    outFile.open(QIODevice::WriteOnly | QIODevice::Append);
+    QTextStream ts(&outFile);
+    ts << txt << Qt::endl;
+}
+
 GarudaDownloader::GarudaDownloader(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::GarudaDownloader)
 {
+    if (!dir.exists())
+        if (!QDir().mkdir(dir.absolutePath()))
+            exit(1);
+    QFile::remove(dir.filePath("log.txt"));
+    cleanUp();
+    qInstallMessageHandler(logHandler);
     ui->setupUi(this);
     setButtonStates(false);
     connect(&zsync_updatetimer, SIGNAL(timeout()), this, SLOT(onUpdate()));
@@ -65,6 +97,7 @@ GarudaDownloader::~GarudaDownloader()
     if (zsync_windows_downloader)
         zsync_windows_downloader->kill();
 #endif
+    cleanUp();
     delete ui;
 }
 
@@ -111,6 +144,9 @@ void GarudaDownloader::on_downloadButton_clicked()
         finished = false;
         zsync_updatetimer.start(500);
         this->ui->progressBar->setValue(0);
+#if __WIN32
+        ui->progressBar->setMaximum(0);
+#endif
     } else {
 #if __unix__
         zsync_downloader->terminate();
@@ -126,6 +162,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
     zsync_updatetimer.stop();
     finished = true;
     this->ui->progressBar->setValue(100);
+    ui->progressBar->setMaximum(100);
 
     if (success) {
         this->ui->statusText->setText("Download finished! Location: <a href=\"#open_folder\">" + dir.absolutePath() + "</a>");
@@ -139,7 +176,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
         }
 #endif
     }
-
+    cleanUp();
     QApplication::alert(this);
 }
 
@@ -191,7 +228,7 @@ void GarudaDownloader::resizeEvent(QResizeEvent* event)
     this->setMaximumHeight(this->sizeHint().height());
 }
 
-void GarudaDownloader::onDownloadStop()
+void GarudaDownloader::onDownloadStop(int code)
 {
 #if __unix__
     delete zsync_client;
@@ -210,19 +247,14 @@ void GarudaDownloader::onDownloadStop()
     this->ui->downloadButton->setText("Download");
     if (!finished) {
         this->ui->progressBar->setValue(0);
-        this->ui->statusText->setText("Idle");
+        ui->progressBar->setMaximum(100);
+        if (code != 0 && code != 62097)
+            this->ui->statusText->setText("Idle, exit code " + QString::number(code) + ", <a href=\"#open_log\">open log file</a>");
+        else
+            this->ui->statusText->setText("Idle");
     }
 
     setButtonStates(false);
-
-    // Clean up some files...
-    QDir wildcards(dir.absolutePath());
-    wildcards.setNameFilters({ "*.zs-old", "rcksum-*", "rufus.exe", "*.zsync" });
-    for (const QString& filename : wildcards.entryList()) {
-        QFile file(dir.absoluteFilePath(filename));
-        file.setPermissions(file.permissions() | QFileDevice::WriteOwner | QFileDevice::WriteUser | QFileDevice::WriteGroup | QFileDevice::WriteOther);
-        file.remove();
-    }
 }
 
 void GarudaDownloader::setButtonStates(bool downloading)
@@ -251,12 +283,8 @@ void GarudaDownloader::onUpdate()
         if (entry.isEmpty())
             continue;
         qInfo() << entry;
-        if (entry.startsWith("optimized ranges,") || entry.startsWith("zsync2 version"))
+        if (entry.startsWith("optimized ranges,") || entry.startsWith("zsync2 version") || entry.startsWith("used "))
             continue;
-        if (entry == "checksum matches OK") {
-            onDownloadFinished(true);
-            return;
-        }
         if (entry.startsWith("\r")) {
             QRegExp expression("\\d+(?:\\.\\d+)?%");
             expression.indexIn(entry);
@@ -265,9 +293,21 @@ void GarudaDownloader::onUpdate()
             bool ok = false;
             int number = captured.first().split(".").first().toInt(&ok);
             if (ok)
+            {
                 this->ui->progressBar->setValue(number);
-        } else
-            this->ui->statusText->setText(entry);
+                ui->progressBar->setMaximum(100);
+            }
+            continue;
+        }
+        if (entry == "checksum matches OK") {
+            onDownloadFinished(true);
+            return;
+        }
+
+        if (entry == "Verifying downloaded file") {
+            ui->progressBar->setMaximum(0);
+        }
+        this->ui->statusText->setText(entry);
     }
     auto error = QString(zsync_windows_downloader->readAllStandardError()).split("\n");
     for (auto& entry : error) {
@@ -357,6 +397,8 @@ void GarudaDownloader::on_statusText_linkActivated(const QString& link)
 {
     if (link == "#open_folder")
         QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
+    else if (link == "#open_log")
+        QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absoluteFilePath("log.txt")));
 }
 
 void GarudaDownloader::onEditionlistDownloaded()
@@ -421,5 +463,17 @@ void GarudaDownloader::onEditionlistDownloaded()
             this->ui->comboBox->addItems(editions);
         }
         this->ui->comboBox->setCurrentIndex(editions.indexOf("Dr460nized"));
+    }
+}
+
+void GarudaDownloader::cleanUp()
+{
+    // Clean up some files...
+    QDir wildcards(dir.absolutePath());
+    wildcards.setNameFilters({ "*.zs-old", "rcksum-*", "rufus.exe", "*.zsync" });
+    for (const QString& filename : wildcards.entryList()) {
+        QFile file(dir.absoluteFilePath(filename));
+        file.setPermissions(file.permissions() | QFileDevice::WriteOwner | QFileDevice::WriteUser | QFileDevice::WriteGroup | QFileDevice::WriteOther);
+        file.remove();
     }
 }
