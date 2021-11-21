@@ -125,7 +125,7 @@ void GarudaDownloader::on_downloadButton_clicked()
 
         zsync_downloader = new ZSyncDownloader(zsync_client);
         connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onDownloadFinished);
-        connect(zsync_downloader, &ZSyncDownloader::finished, this, &GarudaDownloader::onDownloadStop);
+        connect(zsync_downloader, &ZSyncDownloader::finished, this, [this](){ onDownloadStop(0); });
         zsync_downloader->start();
 #else
         zsync_windows_downloader = new QProcess();
@@ -144,9 +144,7 @@ void GarudaDownloader::on_downloadButton_clicked()
         finished = false;
         zsync_updatetimer.start(500);
         this->ui->progressBar->setValue(0);
-#if __WIN32
         ui->progressBar->setMaximum(0);
-#endif
     } else {
 #if __unix__
         zsync_downloader->terminate();
@@ -269,12 +267,18 @@ void GarudaDownloader::setButtonStates(bool downloading)
 void GarudaDownloader::onUpdate()
 {
 #if __unix__
-    this->ui->progressBar->setValue(zsync_client->progress() * 100);
+    if (zsync_client->progress() > 0 && zsync_client->progress() < 1)
+    {
+        this->ui->progressBar->setValue(zsync_client->progress() * 100);
+        ui->progressBar->setMaximum(100);
+    }
     std::string out;
     while (zsync_client->nextStatusMessage(out)) {
         qInfo() << QString::fromStdString(out);
         if (out.rfind("optimized ranges,", 0) == 0)
             continue;
+        if (out.rfind("Verifying downloaded file", 0) == 0)
+            ui->progressBar->setMaximum(0);
         this->ui->statusText->setText(QString::fromStdString(out));
     }
 #else
@@ -360,7 +364,7 @@ void GarudaDownloader::on_flashButton_clicked()
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
         zsync_downloader = new ZSyncDownloader(zsync_client);
         connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onEtcherDownloadFinished);
-        connect(zsync_downloader, &ZSyncDownloader::finished, this, &GarudaDownloader::onDownloadStop);
+        connect(zsync_downloader, &ZSyncDownloader::finished, this, [this](){ onDownloadStop(0); });
         zsync_downloader->start();
         this->ui->downloadButton->setText("Cancel");
         this->ui->statusText->setText("Initializing");
