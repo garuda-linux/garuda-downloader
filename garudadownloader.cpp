@@ -179,7 +179,7 @@ void GarudaDownloader::onDownloadFinished(bool success)
 }
 
 #if __linux__
-void GarudaDownloader::onEtcherDownloadFinished(bool success)
+void GarudaDownloader::onPopsicleDownloadFinished(bool success)
 {
     zsync_updatetimer.stop();
     finished = true;
@@ -189,8 +189,8 @@ void GarudaDownloader::onEtcherDownloadFinished(bool success)
         this->ui->statusText->setText("Idle");
         this->hide();
 
-        QFile::setPermissions(dir.absoluteFilePath("./etcher.AppImage"), QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
-        QProcess::execute(dir.absoluteFilePath("etcher.AppImage"), { dir.absoluteFilePath("./current.iso") });
+        QFile::setPermissions(dir.absoluteFilePath("./popsicle.AppImage"), QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+        QProcess::execute(dir.absoluteFilePath("popsicle.AppImage"), { dir.absoluteFilePath("./current.iso") });
         this->show();
     } else {
         this->ui->progressBar->setValue(100);
@@ -350,20 +350,13 @@ void GarudaDownloader::on_flashButton_clicked()
                 return;
 
 #if __linux__
-        if (QFile::exists("/usr/bin/balena-etcher-electron")) {
-            this->hide();
-            QProcess::execute("/usr/bin/balena-etcher-electron", { dir.absoluteFilePath("./current.iso") });
-            this->show();
-            return;
-        }
-
-        auto path = dir.absoluteFilePath("etcher.zsync");
-        QFile::copy(":/linux/resources/etcher.zsync", path);
-        zsync_client = new zsync2::ZSyncClient(path.toStdString(), "etcher.AppImage");
+        auto path = dir.absoluteFilePath("popsicle.zsync");
+        QFile::copy(":/linux/resources/popsicle.zsync", path);
+        zsync_client = new zsync2::ZSyncClient(path.toStdString(), "popsicle.AppImage");
         zsync_client->setCwd(dir.absolutePath().toStdString());
         zsync_client->setRangesOptimizationThreshold(64 * 4096);
         zsync_downloader = new ZSyncDownloader(zsync_client);
-        connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onEtcherDownloadFinished);
+        connect(zsync_downloader, &ZSyncDownloader::done, this, &GarudaDownloader::onPopsicleDownloadFinished);
         connect(zsync_downloader, &ZSyncDownloader::finished, this, [this](){ onDownloadStop(0); });
         zsync_downloader->start();
         this->ui->downloadButton->setText("Cancel");

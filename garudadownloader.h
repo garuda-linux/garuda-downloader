@@ -59,7 +59,7 @@ private:
     void cleanUp();
 
 #if __unix__
-    void onEtcherDownloadFinished(bool success);
+    void onPopsicleDownloadFinished(bool success);
     void updateSelectSize();
 #endif
 
