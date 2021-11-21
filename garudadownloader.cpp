@@ -61,7 +61,7 @@ void logHandler(QtMsgType type, const QMessageLogContext &, const QString & msg)
     QFile outFile(dir.filePath("log.txt"));
     outFile.open(QIODevice::WriteOnly | QIODevice::Append);
     QTextStream ts(&outFile);
-    ts << txt << Qt::endl;
+    ts << txt << endl;
 }
 
 GarudaDownloader::GarudaDownloader(QWidget* parent)
